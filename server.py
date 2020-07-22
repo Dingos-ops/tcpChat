@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-
-"Servidor socket TCP para iniciar o chat"
+# -*- coding: utf-8 -*-
 
 from socket import socket, SOCK_STREAM, AF_INET
 from threading import Thread
@@ -9,42 +8,33 @@ from os import environ
 import sys
 
 # Configuração
-CONFIG = (
-    "0.0.0.0",
-    int(
-        environ.get(
-            "PORT",
-            5000
-        )
-    )
-)
+CONFIG = ("0.0.0.0", int(environ.get("PORT", 5000)))
 
 # Variaveis que vão guardar informações importantes
-CONNECTION_LIST = []
-MESSAGE_LIST = []
-USERS_NAMES = {}
-TIMEOUT = 0.1
-STOP = False # Não altere esse valor
+CONNECTION_LIST = [] # Não altere
+MESSAGE_LIST = [] # O valor
+USERS_NAMES = {} # Desses três.
+TIMEOUT = 0.1 # Quanto maior mais lento e mais facíl de perder pacotes rápidos.
+STOP = False # Não altere esse valor.
+
+# Para compabilidade recriei essas duas funções internas
+printx = lambda x: sys.stdout.write(str(x) + '\n')
+inputx = sys.stdin.readline
 
 # Inicia o objeto do servidor
-SERVER = socket(
-    AF_INET,
-    SOCK_STREAM
-)
+SERVER = socket(AF_INET, SOCK_STREAM)
 try:
     SERVER.bind(CONFIG)
 except:
-    print(f"[!] Falha ao iniciar o servidor, talvez a porta {CONFIG[1]} já esteja em uso")
+    printx("[!] Falha ao iniciar o servidor, talvez a porta {0[1]} já esteja em uso".format(CONFIG))
     sys.exit(1)
 SERVER.settimeout(TIMEOUT)
 SERVER.setblocking(False)
-SERVER.listen()
+SERVER.listen(250)
 
-print(f"[*] Servidor iniciado em {CONFIG[0]}:{CONFIG[1]}")
+printx("[*] Servidor iniciado em {0[0]}:{0[1]}".format(CONFIG))
 
 def receive_msg():
-    "Quando receber mensagem de qualquer usuario"
-    global CONNECTION_LIST, MESSAGE_LIST
     while not STOP:
         for client in CONNECTION_LIST:
             try:
@@ -55,7 +45,7 @@ def receive_msg():
             if not message:
                 CONNECTION_LIST.remove(client)
                 try:
-                    print(f"[!] {USERS_NAMES[client[1][1]]} saiu do chat")
+                    printx("[!] {0[1[1][1]]} saiu do chat".format(USERS_NAMES, client))
                 except:
                     continue
                 MESSAGE_LIST.append(
@@ -64,7 +54,7 @@ def receive_msg():
                             {
                                 "type": "text",
                                 "name": "Server Info",
-                                "text": [f"{USERS_NAMES[client[1][1]]} saiu do chat"]
+                                "text": ["{0[1[1][1]]} saiu do chat".format(USERS_NAMES, client)]
                             }
                         ),
                         (
@@ -78,7 +68,9 @@ def receive_msg():
             try:
                 message_json = loads(message)
             except:
-                print("[!] Falha ao transformar a mensagem em objeto")
+                printx("[!] Falha ao transformar a mensagem em objeto")
+                continue
+            if message_json['type'] == 'test':
                 continue
             USERS_NAMES[client[1][1]] = message_json["name"]
 
@@ -103,7 +95,7 @@ def receive_msg():
                     )
                 )
                 continue
-            print("[*] Mensagem recebida")
+            printx("[*] Mensagem recebida")
             MESSAGE_LIST.append(
                 (
                     message,
@@ -112,14 +104,12 @@ def receive_msg():
             )
 
 def receive_conn():
-    "Fica aguardando novas conexões"
-    global CONNECTION_LIST, SERVER, TIMEOUT
     while not STOP:
         try:
             client, addr = SERVER.accept()
         except:
             continue
-        print(f"[*] Novo client => {addr[0]}:{addr[1]}")
+        printx("[*] Novo client => {0[0]}:{0[1]}".format(addr))
         client.settimeout(TIMEOUT)
         client.setblocking(False)
         msg = dumps(
@@ -133,8 +123,6 @@ def receive_conn():
         CONNECTION_LIST.append((client, addr))
 
 def send_all():
-    "Espalha as mensagens recebidas"
-    global CONNECTION_LIST, MESSAGE_LIST, SERVER
     while not STOP:
         for message in MESSAGE_LIST:
             for client in CONNECTION_LIST:
@@ -143,19 +131,19 @@ def send_all():
                 try:
                     client[0].send(message[0].encode())
                 except:
-                    print(f"[!] Falha ao enviar para {client[1][0]}:{client[1][1]}")
+                    printx("[!] Falha ao enviar para {0[1][0]}:{0[1][1]}".format(client))
             MESSAGE_LIST.remove(message)
 
 Thread(target=receive_conn, args=()).start()
 Thread(target=receive_msg, args=()).start()
 Thread(target=send_all, args=()).start()
-print("Pressione enter 5 vezes para fechar...")
+printx("Pressione enter 5 vezes para fechar...")
 
 try:
     for stop_count in range(0, 5):
-        input()
+        inputx()
 except:
     pass
 
 STOP = True
-print("[!] Servidor fechado")
+printx("[!] Servidor fechado")
