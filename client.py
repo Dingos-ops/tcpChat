@@ -92,6 +92,7 @@ def receive_msg():
                 0,
                 "Mensagem de {0} não suportada nessa versão!".format(message['name'])
             )
+        sleep(0.2)
 
 def send_msg():
     global STOP, CONNECTION, TEXT_ENTRY, USER_NAME, CHAT_SCREEN, MESSAGE_LIST
@@ -129,13 +130,14 @@ lenta ou o servidor está fora do alcance"""
     TEXT_ENTRY.delete(0, END)
 
 def test_conn():
+    sleep(0.3)
     test_msg = dumps({'type': 'test'}).encode()
     while not STOP:
         try:
             CONNECTION.send(test_msg)
         except Exception as error:
             error_window(error)
-        sleep(0.1)
+        sleep(0.3)
 
 def error_window(error):
     global STOP, ERRO

@@ -3,6 +3,7 @@
 
 from socket import socket, SOCK_STREAM, AF_INET
 from threading import Thread
+from time import sleep
 from json import loads, dumps
 from os import environ
 import sys
@@ -14,7 +15,8 @@ CONFIG = ("0.0.0.0", int(environ.get("PORT", 5000)))
 CONNECTION_LIST = [] # Não altere
 MESSAGE_LIST = [] # O valor
 USERS_NAMES = {} # Desses três.
-TIMEOUT = 0.1 # Quanto maior mais lento e mais facíl de perder pacotes rápidos.
+TIMEOUT = 0.1
+DELAY = 0.3
 STOP = False # Não altere esse valor.
 
 # Para compabilidade recriei essas duas funções internas
@@ -38,8 +40,7 @@ def receive_msg():
     while not STOP:
         for client in CONNECTION_LIST:
             try:
-                message = client[0].recv(16144)
-                message = message.decode()
+                message = client[0].recv(16144).decode()
             except:
                 continue
             if not message:
@@ -68,6 +69,8 @@ def receive_msg():
             try:
                 message_json = loads(message)
             except:
+                if message:
+                    printx(message)
                 printx("[!] Falha ao transformar a mensagem em objeto")
                 continue
             if message_json['type'] == 'test':
@@ -102,6 +105,7 @@ def receive_msg():
                     client[1]
                 )
             )
+        sleep(DELAY)
 
 def receive_conn():
     while not STOP:
@@ -121,6 +125,7 @@ def receive_conn():
         )
         client.send(msg.encode())
         CONNECTION_LIST.append((client, addr))
+        sleep(DELAY)
 
 def send_all():
     while not STOP:
@@ -133,6 +138,7 @@ def send_all():
                 except:
                     printx("[!] Falha ao enviar para {0[1][0]}:{0[1][1]}".format(client))
             MESSAGE_LIST.remove(message)
+        sleep(DELAY)
 
 Thread(target=receive_conn, args=()).start()
 Thread(target=receive_msg, args=()).start()
